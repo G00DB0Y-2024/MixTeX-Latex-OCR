@@ -81,6 +81,7 @@ class MixTeXApp:
 
         self.model = self.load_model('onnx')
 
+        self.stop_event = threading.Event()  # 创建一个事件用于停止线程
         self.ocr_thread = threading.Thread(target=self.ocr_loop, daemon=True)
         self.ocr_thread.start()
 
@@ -160,8 +161,9 @@ class MixTeXApp:
         close_button.place(relx=1.0, rely=0.0, x=-15, y=5, width=12, height=12, anchor="ne")
 
     def quit(self):
+        self.stop_event.set() 
         self.tray_icon.stop()
-        self.root.quit()
+        self.root.destroy()
 
     def only_parse_when_show(self):
         self.is_only_parse_when_show = not self.is_only_parse_when_show
@@ -332,7 +334,7 @@ class MixTeXApp:
         return background
 
     def ocr_loop(self):
-        while True:
+        while not self.stop_event.is_set():
             if not self.ocr_paused and (self.tray_icon.visible or not self.is_only_parse_when_show):
                 try:
                     image = ImageGrab.grabclipboard()
